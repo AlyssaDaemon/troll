@@ -27,7 +27,7 @@ cpu [args]:
   -show
         Should it display CPU Usage while running
   -workers int
-        Number of workers to deploy (default 7)
+        Number of workers to deploy (default 7) // Default is always #CPUs (reported by runtime.NumCPU() - 1)
 ```
 ## Network
 ```
