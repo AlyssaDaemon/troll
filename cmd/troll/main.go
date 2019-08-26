@@ -31,7 +31,6 @@ type FilesCommand struct {
 	fillFile        bool
 	maxWorkers      int64
 	replicationRate int64
-	printEvery      int64
 }
 
 func (*FilesCommand) Name() string {
@@ -59,7 +58,6 @@ func (f *FilesCommand) SetFlags(flags *flag.FlagSet) {
 	flags.Int64Var(&f.maxSize, "size", 512, "How big should files be?")
 	flags.Int64Var(&f.maxWorkers, "workers", 1, "In multifile, how many files to write per tick")
 	flags.Int64Var(&f.replicationRate, "rate", 1000, "How long a 'tick' is in ms")
-	flags.Int64Var(&f.printEvery, "every", 1, "How often should we report writing files? (Set to 0 to disable)")
 }
 
 func (f *FilesCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -83,7 +81,7 @@ func (f *FilesCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...in
 			}
 
 		} else {
-			err := files.CreateAndWriteFile(f.rootPath, f.maxSize)
+			_, err := files.CreateAndWriteFile(f.rootPath, f.maxSize)
 			if err != nil {
 				fmt.Println(err)
 				return subcommands.ExitFailure
@@ -93,15 +91,17 @@ func (f *FilesCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...in
 
 	} else {
 		replicator := files.Replicator{
-			RootPath:    f.rootPath,
-			Ticker:      time.NewTicker(time.Duration(f.replicationRate) * time.Millisecond),
-			MaxSize:     f.maxSize,
-			MaxWorkers:  f.maxWorkers,
-			Context:     ctx,
-			RandomBytes: f.randomBytes,
+			RootPath:     f.rootPath,
+			Ticker:       time.NewTicker(time.Duration(f.replicationRate) * time.Millisecond),
+			MaxSize:      f.maxSize,
+			MaxWorkers:   f.maxWorkers,
+			Context:      ctx,
+			RandomBytes:  f.randomBytes,
+			ShortestTime: time.Duration(9223372036854775807),
 		}
 
 		replicator.Run()
+		replicator.Stats()
 	}
 
 	return subcommands.ExitSuccess
@@ -182,12 +182,13 @@ func (n *NetworkCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...
 	}
 
 	replicator := network.Replicator{
-		Context:     ctx,
-		Ticker:      time.NewTicker(time.Duration(n.replicationRate) * time.Millisecond),
-		MaxWorkers:  n.maxWorkers,
-		WorkerSleep: n.workerSleep,
-		StatusStats: make(map[int]int64),
-		URLs:        urls,
+		Context:      ctx,
+		Ticker:       time.NewTicker(time.Duration(n.replicationRate) * time.Millisecond),
+		MaxWorkers:   n.maxWorkers,
+		WorkerSleep:  n.workerSleep,
+		StatusStats:  make(map[int]int64),
+		URLs:         urls,
+		ShortestTime: time.Duration(9223372036854775807),
 	}
 
 	replicator.Run()
