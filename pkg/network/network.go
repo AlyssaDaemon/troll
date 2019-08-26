@@ -25,7 +25,7 @@ type Replicator struct {
 	ErrorCallsMade      int64
 	WorkerSleep         int64
 	URLs                []string
-	startTime           time.Time
+	StartTime           time.Time
 	StatusStats         map[int]int64
 	TimeRunning         time.Duration
 	ShortestTime        time.Duration
@@ -33,7 +33,7 @@ type Replicator struct {
 }
 
 func (r *Replicator) Stats() {
-	totalTime := time.Since(r.startTime)
+	totalTime := time.Since(r.StartTime)
 	totalCalls := r.SuccessfulCallsMade + r.ErrorCallsMade
 
 	avgRespTime := time.Duration(0)
@@ -65,8 +65,8 @@ func (r *Replicator) Stats() {
 }
 
 func (r *Replicator) Run() {
-	r.startTime = time.Now()
-	results := make(chan Response, r.MaxWorkers)
+	r.StartTime = time.Now()
+	results := make(chan *Response, r.MaxWorkers)
 
 	for {
 		select {
@@ -101,7 +101,7 @@ func (r *Replicator) Run() {
 				continue
 			}
 			for r.MaxWorkers > r.CurrentWorkers {
-				go func(url string, sleep int64, done chan Response) {
+				go func(url string, sleep int64, done chan<- *Response) {
 					if sleep > 0 {
 						time.Sleep(time.Duration(rand.Int63n(sleep)) * time.Millisecond)
 					}
@@ -115,7 +115,7 @@ func (r *Replicator) Run() {
 						status = resp.StatusCode
 					}
 
-					response := Response{
+					response := &Response{
 						URL:      url,
 						Duration: httpDuration,
 						Error:    err,
