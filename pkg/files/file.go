@@ -43,8 +43,8 @@ func (r *Replicator) Stats() {
 
 	avgRespTime := time.Duration(0)
 
-	if r.SucessfulFiles > 0 {
-		avgRespTime = time.Duration(r.TimeRunning.Nanoseconds() / r.SucessfulFiles)
+	if r.FilesWritten > 0 {
+		avgRespTime = time.Duration(r.TimeRunning.Nanoseconds() / r.FilesWritten)
 	}
 
 	if r.ShortestTime == time.Duration(9223372036854775807) {
