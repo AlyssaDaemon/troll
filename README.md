@@ -68,6 +68,16 @@ files [args]:
 ```
 mem [args]:
         Load Test Memory
+  -force
+        Should we force a GC every call?
+  -max string
+        Max amount in memory in base 2. Supports b,k,m,g,t,p (default "1G")
   -rate int
         How long a 'tick' is in ms (default 1000)
+  -read
+        Should we test reading memory?
+  -release
+        Should we release all our memory every tick?
+  -workers int
+        Max number of workers writing and ready memory (default 1)
 ```
