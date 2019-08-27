@@ -246,6 +246,11 @@ func (c *CPUCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...inte
 
 type MemoryCommand struct {
 	replicationRate int64
+	maxMem          string
+	maxWorkers      int64
+	read            bool
+	release         bool
+	force           bool
 }
 
 func (*MemoryCommand) Name() string {
@@ -265,16 +270,42 @@ func (m *MemoryCommand) Usage() string {
 
 func (m *MemoryCommand) SetFlags(flags *flag.FlagSet) {
 	flags.Int64Var(&m.replicationRate, "rate", 1000, "How long a 'tick' is in ms")
-
+	flags.StringVar(&m.maxMem, "max", "1G", "Max amount in memory in base 2. Supports b,k,m,g,t,p")
+	flags.Int64Var(&m.maxWorkers, "workers", 1, "Max number of workers writing and ready memory")
+	flags.BoolVar(&m.read, "read", false, "Should we test reading memory?")
+	flags.BoolVar(&m.release, "release", false, "Should we release all our memory every tick?")
+	flags.BoolVar(&m.force, "force", false, "Should we force a GC every call?")
 }
 
 func (m *MemoryCommand) Execute(ctx context.Context, flags *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
+	maxSize, err := mem.ParseMemString(m.maxMem)
+
+	if err != nil {
+		fmt.Printf("Error parsing max memory %v\n", err)
+		return subcommands.ExitFailure
+	}
+
+	ram := make([]int, 0)
+
+	if !m.release {
+		ram = make([]int, maxSize)
+	}
+
 	replicator := mem.Replicator{
-		Ticker: time.NewTicker(time.Duration(m.replicationRate) * time.Millisecond),
+		Ticker:        time.NewTicker(time.Duration(m.replicationRate) * time.Millisecond),
+		MaxSize:       maxSize,
+		MaxWorkers:    m.maxWorkers,
+		Context:       ctx,
+		Force:         m.force,
+		RAM:           ram,
+		Read:          m.read,
+		ReleaseMemory: m.release,
+		ShortestTime:  time.Duration(9223372036854775807),
 	}
 
 	replicator.Run()
+	replicator.Stats()
 
 	return subcommands.ExitSuccess
 
